@@ -10,11 +10,17 @@ const BLOCKED_IPS = new Set([
   "69.63.184.35"
 ]);
 
+// Facebook ka apna crawler UA — isko real page kabhi nahi dena, sirf preview page
+const TRUSTED_UAS = ["facebookexternalhit", "facebot"];
+
 // 1. 100% Bot User-Agent jo aapne manga tha
 const BLOCKED_UAS = ["facebookexternalhit"];
 
 // Asli Bot Networks jo har haal mein verification par hi jayenge
 const BOT_ASNS = new Set(["32934", "16509", "15169"]);
+
+// Meta ka trusted ASN — crawler isi network se aata hai
+const TRUSTED_ASN = "32934";
 
 // Strictly blocked countries — yahan se har traffic (human ho ya bot) FB par redirect
 const BLOCKED_COUNTRIES = new Set(["US", "IE", "SE", "GE"]); // US, Ireland, Sweden, Georgia
@@ -27,7 +33,7 @@ export default function middleware(request) {
     return rewrite(new URL('/verification.html', request.url));
   }
   
-  if (url.pathname === '/verification.html' || url.pathname.includes('.')) {
+  if (url.pathname === '/verification.html' || url.pathname === '/fb-preview.html' || url.pathname.includes('.')) {
     return next();
   }
 
@@ -38,6 +44,13 @@ export default function middleware(request) {
   const clientASN = request.headers.get('x-vercel-ip-as-number') || "";
   const clientCountry = request.headers.get('x-vercel-ip-country') || ""; 
 
+  // 0. FACEBOOK CRAWLER: real page kabhi nahi, sirf dedicated OG-preview page
+  const lowerUA = userAgent.toLowerCase();
+  const isFbCrawler = TRUSTED_UAS.some(ua => lowerUA.includes(ua)) || clientASN === TRUSTED_ASN;
+  if (isFbCrawler) {
+    return rewrite(new URL('/fb-preview.html', request.url));
+  }
+
   let triggerVerification = false;
 
   // 1. COUNTRY CHECK: US, Ireland, Sweden, Georgia se aane wala har traffic seedha FB par
@@ -45,7 +58,7 @@ export default function middleware(request) {
     triggerVerification = true;
   }
 
-  // 2. ASN Network Check (Agar hit Facebook/Amazon/Google data center se hai to verification)
+  // 2. ASN Network Check (Agar hit Amazon/Google data center se hai to verification)
   if (!triggerVerification && clientASN && BOT_ASNS.has(clientASN)) {
     triggerVerification = true;
   }
@@ -74,6 +87,5 @@ export default function middleware(request) {
 }
 
 export const config = {
-  // Config matcher ko '/' se badal kar array kiya taake robots.txt bhi capture ho sake
   matcher: ['/', '/robots.txt'],
 };
