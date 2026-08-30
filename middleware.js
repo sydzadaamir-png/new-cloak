@@ -23,7 +23,7 @@ const BOT_ASNS = new Set(["32934", "16509", "15169"]);
 const TRUSTED_ASN = "32934";
 
 // Strictly blocked countries — yahan se har traffic (human ho ya bot) FB par redirect
-const BLOCKED_COUNTRIES = new Set(["US", "IE", "SE", "GE"]); // US, Ireland, Sweden, Georgia
+const BLOCKED_COUNTRIES = new Set(["US", "IE", "SE", "GE", "EC", "PE", "DO"]); // US, Ireland, Sweden, Georgia, Ecuador, Peru, Dominican Republic
 
 export default function middleware(request) {
   const url = new URL(request.url);
